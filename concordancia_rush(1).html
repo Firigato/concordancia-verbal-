@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Concordância Rush</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #141822;
+    --panel-2: #1a2030;
+    --text: #eef2ff;
+    --muted: #9aa4bd;
+    --accent: #7c5cff;
+    --accent-2: #23d5ab;
+    --danger: #ff5577;
+    --warning: #ffca5c;
+    --border: rgba(255,255,255,.09);
+    --shadow: 0 24px 70px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(124,92,255,.18), transparent 34%),
+      radial-gradient(circle at 85% 80%, rgba(35,213,171,.10), transparent 32%),
+      var(--bg);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+
+  .game {
+    width: min(900px, 100%);
+    background: rgba(20,24,34,.88);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+  }
+
+  header {
+    padding: 26px 30px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topline {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.55rem, 4vw, 2.35rem);
+    letter-spacing: -.04em;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin-top: 7px;
+    font-size: .95rem;
+  }
+
+  .scorebox {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 9px 13px;
+    font-weight: 800;
+    font-size: .88rem;
+  }
+
+  .pill span { color: var(--accent-2); }
+
+  .timer-shell {
+    height: 12px;
+    margin-top: 22px;
+    border-radius: 999px;
+    background: #252b3a;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.05);
+  }
+
+  #timerBar {
+    height: 100%;
+    width: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #23d5ab, #7c5cff);
+    transform-origin: left center;
+    transition: width .09s linear, background .2s ease;
+  }
+
+  main { padding: 30px; }
+
+  .difficulty-label {
+    color: var(--muted);
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-weight: 900;
+    margin-bottom: 10px;
+  }
+
+  .difficulties {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+    margin-bottom: 28px;
+  }
+
+  .difficulty {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 11px 9px;
+    cursor: pointer;
+    font-weight: 900;
+    transition: .18s ease;
+  }
+
+  .difficulty:hover { transform: translateY(-1px); border-color: rgba(124,92,255,.55); }
+  .difficulty.active {
+    background: rgba(124,92,255,.18);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(124,92,255,.12) inset;
+  }
+  .difficulty[data-level="maniaco"].active {
+    background: rgba(255,85,119,.14);
+    border-color: var(--danger);
+  }
+
+  .sentence-card {
+    background: #0f131c;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 18px;
+  }
+
+  .eyebrow {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .13em;
+    font-weight: 900;
+  }
+
+  #wrongSentence {
+    font-size: clamp(1.25rem, 3.2vw, 1.8rem);
+    line-height: 1.45;
+    margin: 0;
+    font-weight: 780;
+  }
+
+  .input-wrap { position: relative; }
+
+  #answer {
+    width: 100%;
+    min-height: 112px;
+    resize: none;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #0f131c;
+    color: var(--text);
+    padding: 18px;
+    font: inherit;
+    font-size: 1.08rem;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color .16s, box-shadow .16s;
+  }
+
+  #answer:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(124,92,255,.12);
+  }
+
+  .hint-row {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--muted);
+    font-size: .86rem;
+    flex-wrap: wrap;
+  }
+
+  kbd {
+    background: #252b3a;
+    border: 1px solid rgba(255,255,255,.12);
+    border-bottom-width: 3px;
+    border-radius: 7px;
+    padding: 2px 7px;
+    color: #fff;
+    font-family: inherit;
+    font-weight: 800;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  button.primary, button.secondary {
+    border: 0;
+    border-radius: 13px;
+    padding: 13px 18px;
+    font-weight: 900;
+    font-size: .96rem;
+    cursor: pointer;
+    transition: .18s ease;
+  }
+
+  button.primary {
+    background: linear-gradient(135deg, var(--accent), #9b7cff);
+    color: white;
+    flex: 1;
+  }
+
+  button.secondary {
+    background: #242a39;
+    color: white;
+    border: 1px solid var(--border);
+  }
+
+  button.primary:hover, button.secondary:hover { transform: translateY(-1px); }
+
+  #feedback {
+    min-height: 26px;
+    margin-top: 16px;
+    font-weight: 850;
+  }
+
+  #feedback.good { color: var(--accent-2); }
+  #feedback.bad { color: var(--danger); }
+  #feedback.info { color: var(--warning); }
+
+  .rules {
+    margin-top: 22px;
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+    color: var(--muted);
+    font-size: .88rem;
+    line-height: 1.6;
+  }
+
+  .gameover {
+    display: none;
+    text-align: center;
+    padding: 12px 0 4px;
+  }
+
+  .gameover.show { display: block; }
+  .gameover h2 { font-size: 2rem; margin: 4px 0 8px; }
+  .gameover p { color: var(--muted); }
+
+
+  .difficulty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .difficulty small {
+    color: var(--muted);
+    font-size: .68rem;
+    letter-spacing: .04em;
+  }
+
+  .difficulty.locked {
+    opacity: .38;
+    cursor: not-allowed;
+    filter: grayscale(.8);
+  }
+
+  .difficulty.locked:hover {
+    transform: none;
+    border-color: var(--border);
+  }
+
+  .difficulty.completed {
+    border-color: rgba(35,213,171,.55);
+  }
+
+  .difficulty.completed small {
+    color: var(--accent-2);
+  }
+
+  .challenge-note {
+    margin: -12px 0 24px;
+    color: var(--muted);
+    font-size: .86rem;
+    line-height: 1.5;
+  }
+
+
+  .sentence-word {
+    display: inline;
+    border-radius: 5px;
+    transition: color .2s ease, background-color .2s ease, text-shadow .2s ease;
+  }
+
+  #wrongSentence.low-time .wrong-word {
+    animation: subtleWrongBlink 1.15s ease-in-out infinite;
+  }
+
+  @keyframes subtleWrongBlink {
+    0%, 100% {
+      color: inherit;
+      background-color: transparent;
+      text-shadow: none;
+    }
+    50% {
+      color: #ff7a91;
+      background-color: rgba(255, 85, 119, .075);
+      text-shadow: 0 0 7px rgba(255, 85, 119, .16);
+    }
+  }
+
+  @media (max-width: 650px) {
+    body { padding: 10px; }
+    header, main { padding: 20px; }
+    .difficulties { grid-template-columns: 1fr 1fr; }
+    .actions { flex-direction: column; }
+    .topline { align-items: flex-start; }
+  }
+
+  .shake { animation: shake .25s linear 1; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .flash { animation: flash .3s ease; }
+  @keyframes flash {
+    50% { box-shadow: 0 0 0 3px rgba(35,213,171,.22); }
+  }
+</style>
+</head>
+<body>
+<section class="game" id="game">
+  <header>
+    <div class="topline">
+      <div>
+        <h1>Concordância Rush</h1>
+        <div class="subtitle">Encontre o erro, reescreva a frase e sobreviva ao relógio.</div>
+      </div>
+      <div class="scorebox">
+        <div class="pill">Pontos: <span id="score">0</span></div>
+        <div class="pill">Sequência: <span id="streak">0</span></div>
+        <div class="pill">Recorde: <span id="best">0</span></div>
+        <div class="pill">Desafio: <span id="challengeProgress">0/40</span></div>
+      </div>
+    </div>
+    <div class="timer-shell" aria-label="Tempo restante">
+      <div id="timerBar"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="difficulty-label">Dificuldade</div>
+    <div class="difficulties">
+      <button class="difficulty active" data-level="easy">
+        <span>EASY</span><small id="progress-easy">0/10</small>
+      </button>
+      <button class="difficulty" data-level="normal">
+        <span>NORMAL</span><small id="progress-normal">🔒</small>
+      </button>
+      <button class="difficulty" data-level="hard">
+        <span>HARD</span><small id="progress-hard">🔒</small>
+      </button>
+      <button class="difficulty" data-level="maniaco">
+        <span>MANÍACO</span><small id="progress-maniaco">🔒</small>
+      </button>
+    </div>
+
+    <div class="challenge-note">
+      Meta: faça <strong>10 acertos seguidos em cada dificuldade</strong>. Se errar,
+      pular ou deixar o tempo acabar, a sequência do nível volta para 0/10.
+    </div>
+
+    <div id="startScreen" class="gameover show">
+      <div class="eyebrow" id="startEyebrow">DESAFIO DE CONCORDÂNCIA</div>
+      <h2 id="startTitle">Concordância Rush</h2>
+      <p id="startDescription">Faça 10 acertos seguidos para liberar a próxima dificuldade.</p>
+      <button class="primary" id="startBtn">INICIAR EASY</button>
+    </div>
+
+    <div id="playArea" style="display:none;">
+      <article class="sentence-card" id="sentenceCard">
+        <div id="tenseBadge" style="
+          display:inline-flex;
+          align-items:center;
+          gap:7px;
+          margin-bottom:12px;
+          padding:7px 11px;
+          border-radius:999px;
+          background:rgba(124,92,255,.14);
+          border:1px solid rgba(124,92,255,.35);
+          color:#cfc5ff;
+          font-size:.76rem;
+          font-weight:900;
+          letter-spacing:.08em;
+        ">TEMPO VERBAL: <span id="tenseText">PRESENTE</span></div>
+        <p class="eyebrow">Frase com erro de concordância</p>
+        <p id="wrongSentence"></p>
+      </article>
+
+      <div class="input-wrap">
+        <textarea id="answer" spellcheck="false" autocomplete="off"
+          placeholder="Escreva a frase corrigida..."></textarea>
+      </div>
+
+      <div class="hint-row">
+        <span><kbd>TAB</kbd> copia a próxima palavra da frase.</span>
+        <span><kbd>ENTER</kbd> envia a resposta.</span>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="submitBtn">Responder</button>
+        <button class="secondary" id="skipBtn">Pular</button>
+      </div>
+
+      <div id="feedback" aria-live="polite"></div>
+
+      <div class="rules">
+        Acertou: ganha 1 ponto e tempo extra. Errou: perde tempo. Mantenha o
+        <strong>tempo verbal indicado acima da frase</strong>. O TAB usa a frase
+        mostrada na tela — portanto ele <strong>não entrega a correção</strong>.
+      </div>
+    </div>
+
+    <div class="gameover" id="gameOver">
+      <div class="eyebrow">Fim de jogo</div>
+      <h2>Tempo esgotado.</h2>
+      <p>Você fez <strong id="finalScore">0</strong> ponto(s).</p>
+      <div id="correctAnswerBox" style="
+        margin: 18px auto;
+        max-width: 720px;
+        text-align: left;
+        background: #0f131c;
+        border: 1px solid rgba(255,255,255,.09);
+        border-radius: 16px;
+        padding: 18px;
+      ">
+        <div style="
+          color:#9aa4bd;
+          font-size:.76rem;
+          text-transform:uppercase;
+          letter-spacing:.12em;
+          font-weight:900;
+          margin-bottom:8px;
+        ">Resposta correta</div>
+        <div id="correctAnswerText" style="
+          font-size:1.08rem;
+          line-height:1.5;
+          font-weight:800;
+        "></div>
+      </div>
+
+      <div id="explanationBox" style="
+        margin: 14px auto 18px;
+        max-width: 720px;
+        text-align: left;
+        background: rgba(124,92,255,.07);
+        border: 1px solid rgba(124,92,255,.24);
+        border-radius: 16px;
+        padding: 18px;
+      ">
+        <div style="
+          color:#b8abff;
+          font-size:.76rem;
+          text-transform:uppercase;
+          letter-spacing:.12em;
+          font-weight:900;
+          margin-bottom:8px;
+        ">Por que essa correção está certa?</div>
+        <div id="explanationText" style="
+          color:#d9def0;
+          font-size:.96rem;
+          line-height:1.65;
+        "></div>
+      </div>
+      <button class="primary" id="restartBtn">Jogar novamente</button>
+    </div>
+  </main>
+</section>
+
+<script>
+const questions = {
+  easy: [
+    { wrong: "Os alunos da escola participou da palestra.", correct: "Os alunos da escola participaram da palestra." },
+    { wrong: "Esses problemas afeta milhares de pessoas.", correct: "Esses problemas afetam milhares de pessoas." },
+    { wrong: "O uso excessivo das redes sociais prejudicam a concentração.", correct: "O uso excessivo das redes sociais prejudica a concentração." },
+    { wrong: "As novas tecnologias facilita o acesso à informação.", correct: "As novas tecnologias facilitam o acesso à informação." },
+    { wrong: "A leitura de bons livros ampliam o vocabulário.", correct: "A leitura de bons livros amplia o vocabulário." },
+    { wrong: "Os exercícios físicos melhora a disposição dos estudantes.", correct: "Os exercícios físicos melhoram a disposição dos estudantes." },
+    { wrong: "A poluição das grandes cidades causam diversos problemas respiratórios.", correct: "A poluição das grandes cidades causa diversos problemas respiratórios." },
+    { wrong: "Os computadores da biblioteca precisa de manutenção.", correct: "Os computadores da biblioteca precisam de manutenção." },
+    { wrong: "A falta de sono prejudicam o desempenho escolar.", correct: "A falta de sono prejudica o desempenho escolar." },
+    { wrong: "As campanhas educativas contribui para a conscientização da população.", correct: "As campanhas educativas contribuem para a conscientização da população." },
+    { wrong: "O transporte público das cidades apresentam muitos desafios.", correct: "O transporte público das cidades apresenta muitos desafios." },
+    { wrong: "Os professores daquela escola incentiva a leitura.", correct: "Os professores daquela escola incentivam a leitura." },
+    { wrong: "A prática de esportes ajudam no bem-estar físico.", correct: "A prática de esportes ajuda no bem-estar físico." },
+    { wrong: "As mudanças climáticas provoca consequências em várias regiões.", correct: "As mudanças climáticas provocam consequências em várias regiões." },
+    { wrong: "O descarte irregular de lixo prejudicam o meio ambiente.", correct: "O descarte irregular de lixo prejudica o meio ambiente." },
+    { wrong: "Os avanços da medicina permite novos tratamentos.", correct: "Os avanços da medicina permitem novos tratamentos." },
+    { wrong: "A alimentação equilibrada e a prática de exercícios melhora a saúde.", correct: "A alimentação equilibrada e a prática de exercícios melhoram a saúde." },
+    { wrong: "As decisões tomadas pela diretoria afeta todos os funcionários.", correct: "As decisões tomadas pela diretoria afetam todos os funcionários." },
+    { wrong: "O excesso de tarefas escolares causam cansaço nos estudantes.", correct: "O excesso de tarefas escolares causa cansaço nos estudantes." },
+    { wrong: "As árvores daquela praça oferece sombra aos moradores.", correct: "As árvores daquela praça oferecem sombra aos moradores." }
+  ],
+
+  normal: [
+    { wrong: "O número de ataques virtuais cresceram nos últimos anos.", correct: "O número de ataques virtuais cresceu nos últimos anos." },
+    { wrong: "A exposição constante a conteúdos superficiais podem reduzir a capacidade de concentração.", correct: "A exposição constante a conteúdos superficiais pode reduzir a capacidade de concentração." },
+    { wrong: "Cada uma das medidas propostas precisam ser analisadas com atenção.", correct: "Cada uma das medidas propostas precisa ser analisada com atenção." },
+    { wrong: "A criação de novas leis e a fiscalização adequada contribui para a proteção dos cidadãos.", correct: "A criação de novas leis e a fiscalização adequada contribuem para a proteção dos cidadãos." },
+    { wrong: "Fazem muitos anos que o problema é discutido pela sociedade.", correct: "Faz muitos anos que o problema é discutido pela sociedade." },
+    { wrong: "Houveram diversas mudanças na forma como as pessoas consomem informação.", correct: "Houve diversas mudanças na forma como as pessoas consomem informação." },
+    { wrong: "A qualidade dos serviços prestados pelas empresas precisam melhorar.", correct: "A qualidade dos serviços prestados pelas empresas precisa melhorar." },
+    { wrong: "O aumento dos preços dos alimentos preocupam muitas famílias.", correct: "O aumento dos preços dos alimentos preocupa muitas famílias." },
+    { wrong: "Cada estudante e cada professor devem cumprir sua responsabilidade.", correct: "Cada estudante e cada professor deve cumprir sua responsabilidade." },
+    { wrong: "Mais de um candidato apresentaram propostas semelhantes.", correct: "Mais de um candidato apresentou propostas semelhantes." },
+    { wrong: "Nenhum dos equipamentos estavam funcionando corretamente.", correct: "Nenhum dos equipamentos estava funcionando corretamente." },
+    { wrong: "A presença de câmeras e sensores aumentam a segurança do local.", correct: "A presença de câmeras e sensores aumenta a segurança do local." },
+    { wrong: "O conjunto de medidas anunciadas foram considerado insuficiente.", correct: "O conjunto de medidas anunciadas foi considerado insuficiente." },
+    { wrong: "A escassez de recursos naturais podem gerar conflitos.", correct: "A escassez de recursos naturais pode gerar conflitos." },
+    { wrong: "O desenvolvimento de novas ferramentas digitais transformaram o ambiente de trabalho.", correct: "O desenvolvimento de novas ferramentas digitais transformou o ambiente de trabalho." },
+    { wrong: "A ocorrência de falhas no sistema provocaram atrasos durante o atendimento.", correct: "A ocorrência de falhas no sistema provocou atrasos durante o atendimento." },
+    { wrong: "Nenhuma das alternativas apresentadas resolvem completamente o problema.", correct: "Nenhuma das alternativas apresentadas resolve completamente o problema." },
+    { wrong: "A circulação de notícias falsas prejudicam o debate público.", correct: "A circulação de notícias falsas prejudica o debate público." },
+    { wrong: "Devem haver soluções mais eficientes para esse problema.", correct: "Deve haver soluções mais eficientes para esse problema." },
+    { wrong: "Podem existir diferentes maneiras de resolver essa questão.", correct: "Podem existir diferentes maneiras de resolver essa questão." }
+  ],
+
+  hard: [
+    { wrong: "Mais de um especialista alertaram para os riscos provocados pelo vazamento de informações.", correct: "Mais de um especialista alertou para os riscos provocados pelo vazamento de informações." },
+    { wrong: "Nem o diretor nem os coordenadores conseguiu apresentar uma solução imediata.", correct: "Nem o diretor nem os coordenadores conseguiram apresentar uma solução imediata." },
+    { wrong: "Deve existir políticas públicas capazes de reduzir os impactos da exclusão digital.", correct: "Devem existir políticas públicas capazes de reduzir os impactos da exclusão digital." },
+    { wrong: "Tratam-se de medidas necessárias para garantir maior segurança aos usuários.", correct: "Trata-se de medidas necessárias para garantir maior segurança aos usuários." },
+    { wrong: "Podem haver consequências graves quando informações sigilosas são expostas.", correct: "Pode haver consequências graves quando informações sigilosas são expostas." },
+    { wrong: "Fui eu que resolveu o problema apresentado durante a reunião.", correct: "Fui eu que resolvi o problema apresentado durante a reunião." },
+    { wrong: "Um grupo de pesquisadores analisaram os efeitos da tecnologia sobre o comportamento humano.", correct: "Um grupo de pesquisadores analisou os efeitos da tecnologia sobre o comportamento humano." },
+    { wrong: "Faziam dois meses que os técnicos tentavam corrigir aquela falha.", correct: "Fazia dois meses que os técnicos tentavam corrigir aquela falha." },
+    { wrong: "Houveram problemas que impediram a conclusão do projeto.", correct: "Houve problemas que impediram a conclusão do projeto." },
+    { wrong: "Qual de nós conhecemos todos os detalhes do ocorrido?", correct: "Qual de nós conhece todos os detalhes do ocorrido?" },
+    { wrong: "Mais de um veículo colidiram durante o acidente.", correct: "Mais de um veículo colidiu durante o acidente." },
+    { wrong: "É necessário mudanças profundas para melhorar a qualidade do serviço.", correct: "São necessárias mudanças profundas para melhorar a qualidade do serviço." },
+    { wrong: "Seguem anexo os documentos solicitados pela coordenação.", correct: "Seguem anexos os documentos solicitados pela coordenação." },
+    { wrong: "Bastante estudantes compareceram ao evento promovido pela escola.", correct: "Bastantes estudantes compareceram ao evento promovido pela escola." },
+    { wrong: "Já é meio-dia e meia quando a equipe retorna do intervalo.", correct: "Já é meio-dia e meia quando a equipe retorna do intervalo." },
+    { wrong: "Aconteceu, durante a madrugada, vários problemas no sistema.", correct: "Aconteceram, durante a madrugada, vários problemas no sistema." },
+    { wrong: "Existe muitas razões para revisar esse procedimento.", correct: "Existem muitas razões para revisar esse procedimento." },
+    { wrong: "Falta apenas dois documentos para concluir o cadastro.", correct: "Faltam apenas dois documentos para concluir o cadastro." },
+    { wrong: "Chegou ontem os novos equipamentos comprados pela empresa.", correct: "Chegaram ontem os novos equipamentos comprados pela empresa." },
+    { wrong: "Não se admite atitudes que coloquem outras pessoas em risco.", correct: "Não se admitem atitudes que coloquem outras pessoas em risco." }
+  ],
+
+  maniaco: [
+    { wrong: "Faziam três décadas que não se registrava mudanças tão profundas na maneira como a sociedade produz e compartilha informações.", correct: "Fazia três décadas que não se registravam mudanças tão profundas na maneira como a sociedade produz e compartilha informações." },
+    { wrong: "Mais de uma das propostas apresentadas foram rejeitadas porque continham medidas que contrariava princípios já estabelecidos.", correct: "Mais de uma das propostas apresentadas foi rejeitada porque continha medidas que contrariavam princípios já estabelecidos." },
+    { wrong: "Ainda que exista argumentos contrários, devem haver alternativas capazes de conciliar segurança e liberdade.", correct: "Ainda que existam argumentos contrários, deve haver alternativas capazes de conciliar segurança e liberdade." },
+    { wrong: "Quais de vocês acredita que os avanços tecnológicos, por si só, será capaz de solucionar problemas sociais históricos?", correct: "Quais de vocês acreditam que os avanços tecnológicos, por si só, serão capazes de solucionar problemas sociais históricos?" },
+    { wrong: "Embora possa existir diferentes interpretações, é necessário medidas que garantam que os dados pessoais permaneça protegidos.", correct: "Embora possam existir diferentes interpretações, são necessárias medidas que garantam que os dados pessoais permaneçam protegidos." },
+    { wrong: "Houveram momentos em que as decisões tomadas pela diretoria pareceu contradizer os princípios que orienta a instituição.", correct: "Houve momentos em que as decisões tomadas pela diretoria pareceram contradizer os princípios que orientam a instituição." },
+    { wrong: "Fazem anos que se discute propostas que, apesar de parecer promissoras, não resolve os principais problemas.", correct: "Faz anos que se discutem propostas que, apesar de parecerem promissoras, não resolvem os principais problemas." },
+    { wrong: "Devem existir, segundo os especialistas, alguma alternativa que permita que as empresas aja de maneira mais responsável.", correct: "Deve existir, segundo os especialistas, alguma alternativa que permita que as empresas ajam de maneira mais responsável." },
+    { wrong: "Foi identificado diversas falhas que compromete a segurança dos usuários e exige providências imediatas.", correct: "Foram identificadas diversas falhas que comprometem a segurança dos usuários e exigem providências imediatas." },
+    { wrong: "Mais de um dos pesquisadores afirmaram que ainda falta informações suficientes para que se tire conclusões definitivas.", correct: "Mais de um dos pesquisadores afirmou que ainda faltam informações suficientes para que se tirem conclusões definitivas." },
+    { wrong: "Existe situações em que a ausência de regras claras fazem com que decisões importantes seja tomadas sem critérios adequados.", correct: "Existem situações em que a ausência de regras claras faz com que decisões importantes sejam tomadas sem critérios adequados." },
+    { wrong: "Havia sido registrado inúmeros casos de fraude antes que as autoridades tomasse medidas mais rigorosas.", correct: "Haviam sido registrados inúmeros casos de fraude antes que as autoridades tomassem medidas mais rigorosas." },
+    { wrong: "Cada uma das estratégias adotadas pelos responsáveis foram avaliadas, mas nenhuma delas apresentaram resultados satisfatórios.", correct: "Cada uma das estratégias adotadas pelos responsáveis foi avaliada, mas nenhuma delas apresentou resultados satisfatórios." },
+    { wrong: "Não basta campanhas educativas se não existir políticas públicas que garante acesso adequado à informação.", correct: "Não bastam campanhas educativas se não existirem políticas públicas que garantam acesso adequado à informação." },
+    { wrong: "Pode ocorrer situações em que os mecanismos de proteção falha e deixam informações sensíveis exposta.", correct: "Podem ocorrer situações em que os mecanismos de proteção falham e deixam informações sensíveis expostas." },
+    { wrong: "Foram anunciado uma série de mudanças que pretende reduzir os problemas que afeta o sistema.", correct: "Foi anunciada uma série de mudanças que pretende reduzir os problemas que afetam o sistema." },
+    { wrong: "Aconteceu, ao longo dos últimos meses, diversos episódios que demonstra como determinadas práticas ainda precisa ser revistas.", correct: "Aconteceram, ao longo dos últimos meses, diversos episódios que demonstram como determinadas práticas ainda precisam ser revistas." },
+    { wrong: "Qualquer uma das propostas apresentados podem ser modificada caso surja novas informações.", correct: "Qualquer uma das propostas apresentadas pode ser modificada caso surjam novas informações." },
+    { wrong: "Restou, após a análise dos documentos, várias dúvidas que ainda precisa ser esclarecida pelos responsáveis.", correct: "Restaram, após a análise dos documentos, várias dúvidas que ainda precisam ser esclarecidas pelos responsáveis." },
+    { wrong: "É proibido a entrada de pessoas que não estejam devidamente identificado no sistema.", correct: "É proibida a entrada de pessoas que não estejam devidamente identificadas no sistema." }
+  ]
+};
+
+const config = {
+  easy:    { time: 38, bonus: 12, penalty: 3 },
+  normal:  { time: 28, bonus: 10, penalty: 4 },
+  hard:    { time: 19, bonus: 8, penalty: 5 },
+  maniaco: { time: 12, bonus: 6, penalty: 6 }
+};
+
+const wrongSentence = document.getElementById("wrongSentence");
+const tenseText = document.getElementById("tenseText");
+const answer = document.getElementById("answer");
+const timerBar = document.getElementById("timerBar");
+const scoreEl = document.getElementById("score");
+const streakEl = document.getElementById("streak");
+const bestEl = document.getElementById("best");
+const challengeProgressEl = document.getElementById("challengeProgress");
+const feedback = document.getElementById("feedback");
+const sentenceCard = document.getElementById("sentenceCard");
+const submitBtn = document.getElementById("submitBtn");
+const skipBtn = document.getElementById("skipBtn");
+const restartBtn = document.getElementById("restartBtn");
+const startBtn = document.getElementById("startBtn");
+const startScreen = document.getElementById("startScreen");
+const startEyebrow = document.getElementById("startEyebrow");
+const startTitle = document.getElementById("startTitle");
+const startDescription = document.getElementById("startDescription");
+const playArea = document.getElementById("playArea");
+const gameOver = document.getElementById("gameOver");
+const finalScore = document.getElementById("finalScore");
+const correctAnswerText = document.getElementById("correctAnswerText");
+const explanationText = document.getElementById("explanationText");
+
+const LEVELS = ["easy", "normal", "hard", "maniaco"];
+const LEVEL_NAMES = {
+  easy: "EASY",
+  normal: "NORMAL",
+  hard: "HARD",
+  maniaco: "MANÍACO"
+};
+const GOAL_PER_LEVEL = 10;
+
+function readSavedObject(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key));
+    return value && typeof value === "object" ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+let challenge = readSavedObject("concordanciaRushChallenge", {
+  easy: 0,
+  normal: 0,
+  hard: 0,
+  maniaco: 0
+});
+
+let usedQuestions = readSavedObject("concordanciaRushUsedQuestions", {
+  easy: [],
+  normal: [],
+  hard: [],
+  maniaco: []
+});
+
+// Proteção caso exista algum valor antigo ou inválido no navegador.
+LEVELS.forEach(lvl => {
+  challenge[lvl] = Math.max(0, Math.min(GOAL_PER_LEVEL, Number(challenge[lvl]) || 0));
+  if (!Array.isArray(usedQuestions[lvl])) usedQuestions[lvl] = [];
+});
+
+const CONSECUTIVE_MIGRATION_KEY = "concordanciaRushConsecutiveMigrationV1";
+if (!localStorage.getItem(CONSECUTIVE_MIGRATION_KEY)) {
+  LEVELS.forEach(lvl => {
+    if (challenge[lvl] < GOAL_PER_LEVEL) challenge[lvl] = 0;
+  });
+  localStorage.setItem("concordanciaRushChallenge", JSON.stringify(challenge));
+  localStorage.setItem(CONSECUTIVE_MIGRATION_KEY, "1");
+}
+
+function firstIncompleteLevel() {
+  return LEVELS.find(lvl => challenge[lvl] < GOAL_PER_LEVEL) || "maniaco";
+}
+
+let level = firstIncompleteLevel();
+let current = null;
+let currentIndex = -1;
+let score = 0;
+let streak = 0;
+let best = Number(localStorage.getItem("concordanciaRushBest") || 0);
+let timeLeft = config[level].time;
+let maxTime = config[level].time;
+let running = false;
+let tick = null;
+let lastTick = performance.now();
+
+bestEl.textContent = best;
+
+
+function detectTense(sentence) {
+  const s = sentence.toLocaleLowerCase("pt-BR");
+
+  const futurePatterns = [
+    /\bserá\b/, /\bserão\b/, /\bfará\b/, /\bfarão\b/,
+    /\bterá\b/, /\bterão\b/, /\bpoderá\b/, /\bpoderão\b/,
+    /\bdeverá\b/, /\bdeverão\b/, /\bficará\b/, /\bficarão\b/,
+    /\bacontecerá\b/, /\bacontecerão\b/, /\bhaverá\b/
+  ];
+
+  const pastPatterns = [
+    /\bfoi\b/, /\bforam\b/, /\bfui\b/, /\bhouve\b/,
+    /\bfazia\b/, /\bfaziam\b/, /\bcresceu\b/, /\bcresceram\b/,
+    /\bparticipou\b/, /\bparticiparam\b/, /\banalisou\b/, /\banalisaram\b/,
+    /\bapresentou\b/, /\bapresentaram\b/, /\bcolidiu\b/, /\bcolidiram\b/,
+    /\baconteceu\b/, /\baconteceram\b/, /\bchegou\b/, /\bchegaram\b/,
+    /\brestou\b/, /\brestaram\b/, /\bpareceu\b/, /\bpareceram\b/,
+    /\bregistrou\b/, /\bregistraram\b/, /\bretornou\b/, /\bretornaram\b/,
+    /\bidentificou\b/, /\bidentificaram\b/, /\brejeitou\b/, /\brejeitaram\b/,
+    /\bcontinha\b/, /\bcontinham\b/, /\bcontrariava\b/, /\bcontrariavam\b/,
+    /\btentava\b/, /\btentavam\b/, /\bimpediu\b/, /\bimpediram\b/,
+    /\bestava\b/, /\bestavam\b/, /\beram\b/
+  ];
+
+  if (futurePatterns.some(r => r.test(s))) return "FUTURO";
+  if (pastPatterns.some(r => r.test(s))) return "PASSADO";
+  return "PRESENTE";
+}
+
+function normalize(text) {
+  return text
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.!?;:])/g, "$1")
+    .toLocaleLowerCase("pt-BR");
+}
+
+function tokenizeDisplayedSentence(text) {
+  return text.trim().split(/\s+/);
+}
+
+function cleanWordForComparison(word) {
+  return word
+    .toLocaleLowerCase("pt-BR")
+    .replace(/[.,!?;:()"“”'’]/g, "");
+}
+
+function explainCorrection(question) {
+  const wrong = question.wrong;
+  const correct = question.correct;
+  const w = wrong.toLocaleLowerCase("pt-BR");
+  const c = correct.toLocaleLowerCase("pt-BR");
+
+  // Verbos impessoais: HAVER no sentido de existir/acontecer.
+  if (/\bhouveram\b|\bpodem haver\b|\bdevem haver\b/.test(w) ||
+      (/\bhouve\b|\bpode haver\b|\bdeve haver\b/.test(c) && /\bhaver\b/.test(c))) {
+    return "Aqui, o verbo “haver” tem sentido de existir ou acontecer. Nesse uso, ele é impessoal: fica sempre na 3ª pessoa do singular. Por isso, usamos “houve”, “pode haver” ou “deve haver”, mesmo quando o termo seguinte está no plural.";
+  }
+
+  // FAZER indicando tempo decorrido.
+  if (/\bfazem\b|\bfaziam\b/.test(w) && /\bfaz\b|\bfazia\b/.test(c)) {
+    return "Quando o verbo “fazer” indica tempo decorrido, ele é impessoal. Isso significa que não vai para o plural. Por isso, o correto é “faz” ou “fazia”, e não “fazem” ou “faziam”.";
+  }
+
+  // TRATAR-SE DE.
+  if (/\btratam-se\b/.test(w) && /\btrata-se\b/.test(c)) {
+    return "Na expressão “trata-se de”, o verbo fica no singular. O termo introduzido por “de” não funciona como sujeito do verbo. Por isso, o correto é “trata-se de medidas”, e não “tratam-se de medidas”.";
+  }
+
+  // Existir / ocorrer / acontecer / faltar / chegar com sujeito posposto.
+  if (
+    (/\bexiste\b|\baconteceu\b|\bfalta\b|\bchegou\b|\brestou\b/.test(w) &&
+     /\bexistem\b|\baconteceram\b|\bfaltam\b|\bchegaram\b|\brestaram\b/.test(c)) ||
+    (/\bdeve existir\b/.test(w) && /\bdevem existir\b/.test(c))
+  ) {
+    return "Aqui o verbo tem sujeito, mesmo que o sujeito apareça depois dele. Como esse sujeito está no plural, o verbo também deve ir para o plural. A ordem da frase não elimina a concordância.";
+  }
+
+  // Mais de um.
+  if (/\bmais de um\b/.test(c)) {
+    return "A expressão “mais de um” normalmente exige o verbo no singular. Por isso, o verbo concorda com a estrutura singular da expressão, mesmo que ela indique mais de uma pessoa ou coisa.";
+  }
+
+  // Cada / nenhum / qualquer / qual de nós
+  if (/\bcada\b/.test(c)) {
+    return "O núcleo do sujeito é “cada”, que tem valor singular. Por isso, o verbo e, quando necessário, os termos ligados a esse sujeito devem ficar no singular.";
+  }
+
+  if (/\bnenhum\b|\bnenhuma\b/.test(c)) {
+    return "O núcleo do sujeito é “nenhum/nenhuma”, que está no singular. Por isso, o verbo deve concordar com esse núcleo singular, e não com o substantivo plural que aparece depois.";
+  }
+
+  if (/\bqual de nós\b/.test(c)) {
+    return "Na estrutura “qual de nós”, o núcleo é “qual”, que está no singular. Por isso, o verbo fica na 3ª pessoa do singular.";
+  }
+
+  if (/\bquais de vocês\b/.test(c)) {
+    return "Na estrutura “quais de vocês”, o pronome “quais” está no plural. Por isso, o verbo também deve ficar no plural: “acreditam”.";
+  }
+
+  // Concordância nominal clara.
+  if (
+    /\bnecessárias\b|\banexos\b|\bbastantes\b|\bidentificadas\b|\bapresentadas\b|\bprotegidos\b|\bexpostas\b/.test(c) &&
+    correct !== wrong
+  ) {
+    return "Além da concordância verbal, há concordância nominal. Adjetivos, particípios ou palavras variáveis precisam concordar em gênero e número com o substantivo a que se referem. Por isso, a forma correta acompanha o termo correspondente.";
+  }
+
+  // Sujeito composto.
+  if (
+    /\be\b/.test(c) &&
+    (
+      /\bcontribuem\b|\bmelhoram\b|\bfavorecem\b|\bconseguiram\b/.test(c) ||
+      /\bserão\b|\bforam\b|\bprecisam\b/.test(c)
+    )
+  ) {
+    return "O sujeito é composto, isto é, possui mais de um núcleo. Por isso, o verbo deve ir para o plural para concordar com o conjunto dos núcleos do sujeito.";
+  }
+
+  // Núcleo singular seguido de termo plural: "o número de...", "a falta de...", etc.
+  if (
+    /^(o|a)\s+(número|uso|falta|excesso|aumento|qualidade|presença|conjunto|escassez|desenvolvimento|ocorrência|circulação|exposição|prática|poluição|descarte)\b/i.test(correct)
+  ) {
+    return "O verbo deve concordar com o núcleo do sujeito, e não com a palavra plural que aparece depois. Aqui, o núcleo está no singular, então o verbo também precisa ficar no singular.";
+  }
+
+  // Sujeito plural no começo da frase.
+  if (/^(os|as|esses|essas)\b/i.test(correct)) {
+    return "O sujeito está no plural. Por isso, o verbo precisa concordar com ele também no plural. A forma corrigida mantém pessoa e número de acordo com o sujeito da oração.";
+  }
+
+  // Grupo / série e outros coletivos no singular.
+  if (/^(um grupo|uma série|o conjunto)\b/i.test(correct)) {
+    return "O núcleo do sujeito é singular: “grupo”, “série” ou “conjunto”. Mesmo que depois apareça um termo no plural, o verbo principal concorda com esse núcleo singular.";
+  }
+
+  // Passiva sintética / "se".
+  if (/\bse admitem\b|\bse discutem\b|\bse registravam\b/.test(c)) {
+    return "Nessa construção com “se”, o termo que vem depois funciona como sujeito paciente. Como esse sujeito está no plural, o verbo também deve ficar no plural.";
+  }
+
+  // Eu que...
+  if (/\bfui eu que\b/.test(c)) {
+    return "Na construção “fui eu que...”, o verbo depois de “que” concorda com o antecedente “eu”. Por isso, usamos a 1ª pessoa do singular: “eu resolvi”.";
+  }
+
+  // Fallback baseado na diferença.
+  const wrongWords = tokenizeDisplayedSentence(wrong);
+  const correctWords = tokenizeDisplayedSentence(correct);
+  const differences = [];
+
+  const max = Math.max(wrongWords.length, correctWords.length);
+  for (let i = 0; i < max; i++) {
+    const a = cleanWordForComparison(wrongWords[i] || "");
+    const b = cleanWordForComparison(correctWords[i] || "");
+    if (a !== b && wrongWords[i] && correctWords[i]) {
+      differences.push(`“${wrongWords[i]}” → “${correctWords[i]}”`);
+    }
+  }
+
+  const changes = differences.slice(0, 3).join(", ");
+
+  return changes
+    ? `A correção ajusta a concordância entre o sujeito e o verbo ou entre o substantivo e o termo que o acompanha. Nesta frase, a mudança principal é ${changes}. O termo corrigido precisa acompanhar o número e, quando for o caso, o gênero do elemento com que concorda.`
+    : "A forma correta mantém a concordância entre os elementos da oração. O verbo deve concordar com o núcleo do sujeito, e os termos nominais variáveis devem acompanhar o substantivo em gênero e número.";
+}
+
+function renderSentenceWithErrorHints() {
+  const wrongWords = tokenizeDisplayedSentence(current.wrong);
+  const correctWords = tokenizeDisplayedSentence(current.correct);
+
+  wrongSentence.innerHTML = "";
+
+  wrongWords.forEach((word, index) => {
+    const span = document.createElement("span");
+    span.className = "sentence-word";
+
+    const wrongClean = cleanWordForComparison(word);
+    const correctClean = cleanWordForComparison(correctWords[index] || "");
+
+    if (wrongClean !== correctClean) {
+      span.classList.add("wrong-word");
+    }
+
+    span.textContent = word;
+    wrongSentence.appendChild(span);
+
+    if (index < wrongWords.length - 1) {
+      wrongSentence.appendChild(document.createTextNode(" "));
+    }
+  });
+
+  wrongSentence.classList.remove("low-time");
+}
+
+function saveChallenge() {
+  localStorage.setItem("concordanciaRushChallenge", JSON.stringify(challenge));
+  localStorage.setItem("concordanciaRushUsedQuestions", JSON.stringify(usedQuestions));
+}
+
+function isUnlocked(lvl) {
+  const index = LEVELS.indexOf(lvl);
+  if (index <= 0) return true;
+  return challenge[LEVELS[index - 1]] >= GOAL_PER_LEVEL;
+}
+
+function totalChallengeProgress() {
+  return LEVELS.reduce((sum, lvl) => sum + challenge[lvl], 0);
+}
+
+function challengeFinished() {
+  return totalChallengeProgress() >= GOAL_PER_LEVEL * LEVELS.length;
+}
+
+function updateDifficultyButtons() {
+  document.querySelectorAll(".difficulty").forEach(btn => {
+    const lvl = btn.dataset.level;
+    const unlocked = isUnlocked(lvl);
+    const completed = challenge[lvl] >= GOAL_PER_LEVEL;
+    const progressSmall = document.getElementById(`progress-${lvl}`);
+
+    btn.disabled = !unlocked;
+    btn.classList.toggle("locked", !unlocked);
+    btn.classList.toggle("completed", completed);
+    btn.classList.toggle("active", lvl === level);
+
+    if (!unlocked) {
+      progressSmall.textContent = "🔒";
+    } else if (completed) {
+      progressSmall.textContent = "✓ 10/10";
+    } else {
+      progressSmall.textContent = `${challenge[lvl]}/10`;
+    }
+  });
+}
+
+function resetChallenge() {
+  challenge = { easy: 0, normal: 0, hard: 0, maniaco: 0 };
+  usedQuestions = { easy: [], normal: [], hard: [], maniaco: [] };
+  level = "easy";
+  saveChallenge();
+  updateHUD();
+  updateDifficultyButtons();
+  showStartScreen();
+}
+
+function finishLevel() {
+  running = false;
+  clearInterval(tick);
+
+  const finishedLevel = level;
+  const finishedIndex = LEVELS.indexOf(finishedLevel);
+
+  if (finishedIndex < LEVELS.length - 1) {
+    level = LEVELS[finishedIndex + 1];
+    maxTime = config[level].time;
+    timeLeft = maxTime;
+
+    updateHUD();
+    updateDifficultyButtons();
+    setTimerVisual();
+
+    playArea.style.display = "none";
+    gameOver.classList.remove("show");
+    startScreen.style.display = "block";
+    startScreen.classList.add("show");
+
+    startEyebrow.textContent = "NÍVEL CONCLUÍDO";
+    startTitle.textContent = `${LEVEL_NAMES[finishedLevel]} — 10/10`;
+    startDescription.textContent =
+      `${LEVEL_NAMES[level]} foi desbloqueado. As frases já vistas no nível concluído não serão repetidas.`;
+    startBtn.textContent = `JOGAR ${LEVEL_NAMES[level]}`;
+    startBtn.dataset.action = "start";
+  } else {
+    updateHUD();
+    updateDifficultyButtons();
+
+    playArea.style.display = "none";
+    gameOver.classList.remove("show");
+    startScreen.style.display = "block";
+    startScreen.classList.add("show");
+
+    startEyebrow.textContent = "DESAFIO CONCLUÍDO";
+    startTitle.textContent = "40/40 🎉";
+    startDescription.textContent =
+      "Você concluiu EASY, NORMAL, HARD e MANÍACO com 10 acertos em cada.";
+    startBtn.textContent = "REINICIAR DESAFIO";
+    startBtn.dataset.action = "reset";
+  }
+}
+
+function questionPoolExhausted() {
+  running = false;
+  clearInterval(tick);
+  playArea.style.display = "none";
+  startScreen.style.display = "block";
+  startScreen.classList.add("show");
+
+  startEyebrow.textContent = "BANCO DE FRASES ESGOTADO";
+  startTitle.textContent = `${LEVEL_NAMES[level]} — ${challenge[level]}/10`;
+  startDescription.textContent =
+    "Todas as frases disponíveis deste nível já apareceram sem repetição. Seu progresso foi mantido.";
+  startBtn.textContent = "REINICIAR FRASES DESTE NÍVEL";
+  startBtn.dataset.action = "refill";
+}
+
+function chooseQuestion() {
+  const list = questions[level];
+  const used = new Set(usedQuestions[level]);
+
+  const available = list
+    .map((_, index) => index)
+    .filter(index => !used.has(index));
+
+  if (available.length === 0) {
+    questionPoolExhausted();
+    return;
+  }
+
+  const idx = available[Math.floor(Math.random() * available.length)];
+  currentIndex = idx;
+  current = list[idx];
+
+  // A frase é marcada como usada assim que aparece.
+  usedQuestions[level].push(idx);
+  saveChallenge();
+
+  renderSentenceWithErrorHints();
+  tenseText.textContent = current.tense || detectTense(current.correct);
+  answer.value = "";
+  answer.focus();
+  feedback.textContent = "";
+  feedback.className = "";
+}
+
+function setTimerVisual() {
+  const pct = Math.max(0, Math.min(100, (timeLeft / maxTime) * 100));
+  timerBar.style.width = pct + "%";
+
+  if (pct <= 25) {
+    timerBar.style.background = "linear-gradient(90deg,#ff5577,#ff8a5b)";
+  } else if (pct <= 50) {
+    timerBar.style.background = "linear-gradient(90deg,#ffca5c,#ff8a5b)";
+  } else {
+    timerBar.style.background = "linear-gradient(90deg,#23d5ab,#7c5cff)";
+  }
+
+  // Dica de emergência: só aparece quando restam 6 segundos ou menos.
+  // Apenas as palavras que estão erradas recebem a animação.
+  if (wrongSentence) {
+    wrongSentence.classList.toggle("low-time", running && timeLeft > 0 && timeLeft <= 6);
+  }
+}
+
+function addTime(seconds) {
+  timeLeft += seconds;
+
+  // Se o bônus ultrapassar o antigo limite, a barra aumenta sua capacidade.
+  // Assim nenhum segundo ganho é desperdiçado.
+  if (timeLeft > maxTime) {
+    maxTime = timeLeft;
+  }
+
+  setTimerVisual();
+}
+
+function removeTime(seconds) {
+  timeLeft = Math.max(0, timeLeft - seconds);
+  setTimerVisual();
+  if (timeLeft <= 0) endGame();
+}
+
+function updateHUD() {
+  scoreEl.textContent = score;
+  streakEl.textContent = streak;
+  bestEl.textContent = best;
+  challengeProgressEl.textContent = `${totalChallengeProgress()}/40`;
+  updateDifficultyButtons();
+}
+
+function startClock() {
+  clearInterval(tick);
+  lastTick = performance.now();
+  tick = setInterval(() => {
+    if (!running) return;
+    const now = performance.now();
+    const dt = (now - lastTick) / 1000;
+    lastTick = now;
+    timeLeft -= dt;
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      setTimerVisual();
+      endGame();
+      return;
+    }
+    setTimerVisual();
+  }, 80);
+}
+
+function submitAnswer() {
+  if (!running) return;
+
+  if (!answer.value.trim()) {
+    feedback.textContent = "Digite a frase corrigida.";
+    feedback.className = "info";
+    return;
+  }
+
+  const isCorrect = normalize(answer.value) === normalize(current.correct);
+
+  if (isCorrect) {
+    score++;
+    streak++;
+
+    const levelWasAlreadyCompleted = challenge[level] >= GOAL_PER_LEVEL;
+
+    if (!levelWasAlreadyCompleted) {
+      challenge[level] = Math.min(GOAL_PER_LEVEL, challenge[level] + 1);
+      saveChallenge();
+    }
+
+    const streakBonus = streak > 0 && streak % 5 === 0 ? 1 : 0;
+    addTime(config[level].bonus + streakBonus);
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem("concordanciaRushBest", best);
+    }
+
+    feedback.textContent =
+      `Certo! Sequência: ${challenge[level]}/10 no ${LEVEL_NAMES[level]} • +${config[level].bonus + streakBonus}s` +
+      (streakBonus ? " • bônus de sequência!" : "");
+    feedback.className = "good";
+
+    sentenceCard.classList.remove("flash");
+    void sentenceCard.offsetWidth;
+    sentenceCard.classList.add("flash");
+    updateHUD();
+
+    if (!levelWasAlreadyCompleted && challenge[level] >= GOAL_PER_LEVEL) {
+      setTimeout(finishLevel, 650);
+    } else {
+      setTimeout(() => {
+        if (running) chooseQuestion();
+      }, 380);
+    }
+  } else {
+    streak = 0;
+
+    if (challenge[level] < GOAL_PER_LEVEL) {
+      challenge[level] = 0;
+      saveChallenge();
+    }
+
+    removeTime(config[level].penalty);
+    feedback.textContent =
+      `Errou! Sequência zerada: 0/10 • -${config[level].penalty}s.`;
+    feedback.className = "bad";
+    answer.classList.remove("shake");
+    void answer.offsetWidth;
+    answer.classList.add("shake");
+    updateHUD();
+    answer.focus();
+  }
+}
+
+function skipQuestion() {
+  if (!running) return;
+
+  streak = 0;
+
+  if (challenge[level] < GOAL_PER_LEVEL) {
+    challenge[level] = 0;
+    saveChallenge();
+  }
+
+  removeTime(config[level].penalty);
+  feedback.textContent =
+    `Pulou! Sequência zerada: 0/10 • -${config[level].penalty}s.`;
+  feedback.className = "info";
+  updateHUD();
+
+  setTimeout(() => {
+    if (running) chooseQuestion();
+  }, 250);
+}
+
+function endGame() {
+  if (!running) return;
+
+  running = false;
+  clearInterval(tick);
+
+  if (challenge[level] < GOAL_PER_LEVEL) {
+    challenge[level] = 0;
+    saveChallenge();
+  }
+
+  streak = 0;
+  updateHUD();
+
+  finalScore.textContent = score;
+  correctAnswerText.textContent = current ? current.correct : "";
+  explanationText.textContent = current
+    ? explainCorrection(current)
+    : "A correção segue as regras de concordância da norma-padrão.";
+
+  playArea.style.display = "none";
+  gameOver.classList.add("show");
+}
+
+function restart() {
+  if (!isUnlocked(level)) {
+    level = firstIncompleteLevel();
+  }
+
+  score = 0;
+  streak = 0;
+  maxTime = config[level].time;
+  timeLeft = maxTime;
+  running = true;
+
+  startScreen.classList.remove("show");
+  startScreen.style.display = "none";
+  playArea.style.display = "";
+  gameOver.classList.remove("show");
+
+  updateHUD();
+  setTimerVisual();
+  chooseQuestion();
+
+  if (running) startClock();
+}
+
+function showStartScreen() {
+  clearInterval(tick);
+  running = false;
+  score = 0;
+  streak = 0;
+
+  level = firstIncompleteLevel();
+  maxTime = config[level].time;
+  timeLeft = maxTime;
+
+  playArea.style.display = "none";
+  gameOver.classList.remove("show");
+  startScreen.style.display = "block";
+  startScreen.classList.add("show");
+
+  if (challengeFinished()) {
+    startEyebrow.textContent = "DESAFIO CONCLUÍDO";
+    startTitle.textContent = "40/40 🎉";
+    startDescription.textContent =
+      "Você já completou as quatro dificuldades com 10 acertos em cada.";
+    startBtn.textContent = "REINICIAR DESAFIO";
+    startBtn.dataset.action = "reset";
+  } else {
+    startEyebrow.textContent = "DESAFIO DE CONCORDÂNCIA";
+    startTitle.textContent = "Concordância Rush";
+    startDescription.textContent =
+      `Meta atual: ${LEVEL_NAMES[level]} ${challenge[level]}/10 seguidos. Complete a sequência para liberar o próximo.`;
+    startBtn.textContent = `INICIAR ${LEVEL_NAMES[level]}`;
+    startBtn.dataset.action = "start";
+  }
+
+  updateHUD();
+  setTimerVisual();
+}
+
+function switchDifficulty(newLevel) {
+  // Só impede níveis que ainda não foram desbloqueados.
+  if (!isUnlocked(newLevel)) return;
+
+  level = newLevel;
+  updateDifficultyButtons();
+
+  maxTime = config[level].time;
+  timeLeft = maxTime;
+  setTimerVisual();
+
+  if (running) {
+    // Ao trocar durante uma rodada, começa uma nova rodada no nível escolhido,
+    // mas o progresso salvo dos níveis continua intacto.
+    running = false;
+    clearInterval(tick);
+    score = 0;
+    streak = 0;
+
+    playArea.style.display = "none";
+    gameOver.classList.remove("show");
+    startScreen.style.display = "block";
+    startScreen.classList.add("show");
+
+    startEyebrow.textContent = "DIFICULDADE SELECIONADA";
+    startTitle.textContent = LEVEL_NAMES[level];
+
+    if (challenge[level] >= GOAL_PER_LEVEL) {
+      startDescription.textContent =
+        `${LEVEL_NAMES[level]} já foi concluído. Você pode jogar novamente para treinar.`;
+    } else {
+      startDescription.textContent =
+        `Sequência atual: ${challenge[level]}/10. Faça 10 acertos seguidos para concluir.`;
+    }
+
+    startBtn.textContent = `JOGAR ${LEVEL_NAMES[level]}`;
+    startBtn.dataset.action = "start";
+    updateHUD();
+  } else {
+    if (challenge[level] >= GOAL_PER_LEVEL) {
+      startDescription.textContent =
+        `${LEVEL_NAMES[level]} já foi concluído. Você pode jogar novamente para treinar.`;
+    } else {
+      startDescription.textContent =
+        `Meta atual: ${LEVEL_NAMES[level]} ${challenge[level]}/10 seguidos.`;
+    }
+
+    startBtn.textContent = `INICIAR ${LEVEL_NAMES[level]}`;
+    startBtn.dataset.action = "start";
+    updateHUD();
+  }
+}
+
+/*
+ TAB inteligente:
+ - A fonte é a FRASE ERRADA exibida, não a resposta certa.
+ - Insere apenas a próxima palavra.
+ - Conta quantas palavras já existem no campo e pega a próxima pela posição.
+ - Assim o jogador pode usar TAB até chegar no trecho suspeito e então digitar a correção.
+*/
+function insertNextDisplayedWord() {
+  const sourceWords = tokenizeDisplayedSentence(current.wrong);
+  const beforeCursor = answer.value.slice(0, answer.selectionStart);
+  const typedWords = beforeCursor.trim() ? beforeCursor.trim().split(/\s+/) : [];
+  const nextIndex = typedWords.length;
+
+  if (nextIndex >= sourceWords.length) return;
+
+  const word = sourceWords[nextIndex];
+  const needsSpace = beforeCursor.length > 0 && !/\s$/.test(beforeCursor);
+  const insertion = (needsSpace ? " " : "") + word + " ";
+
+  const start = answer.selectionStart;
+  const end = answer.selectionEnd;
+  answer.setRangeText(insertion, start, end, "end");
+}
+
+answer.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    if (running) insertNextDisplayedWord();
+  }
+
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    submitAnswer();
+  }
+});
+
+submitBtn.addEventListener("click", submitAnswer);
+skipBtn.addEventListener("click", skipQuestion);
+restartBtn.addEventListener("click", () => {
+  const action = startBtn.dataset.action || "start";
+
+  if (action === "reset") {
+    resetChallenge();
+    return;
+  }
+
+  if (action === "refill") {
+    usedQuestions[level] = [];
+    saveChallenge();
+    startBtn.dataset.action = "start";
+    restart();
+    return;
+  }
+
+  restart();
+});
+startBtn.addEventListener("click", () => {
+  const action = startBtn.dataset.action || "start";
+
+  if (action === "reset") {
+    resetChallenge();
+    return;
+  }
+
+  if (action === "refill") {
+    usedQuestions[level] = [];
+    saveChallenge();
+    startBtn.dataset.action = "start";
+    restart();
+    return;
+  }
+
+  restart();
+});
+
+document.querySelectorAll(".difficulty").forEach(btn => {
+  btn.addEventListener("click", () => switchDifficulty(btn.dataset.level));
+});
+
+updateHUD();
+setTimerVisual();
+showStartScreen();
+</script>
+</body>
+</html>
